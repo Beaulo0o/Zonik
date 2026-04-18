@@ -5,7 +5,7 @@
 ### Высокопроизводительное ядро базы данных для современной e-commerce платформы
 
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
@@ -37,40 +37,63 @@
 ### ✅ Решение
 
 **Zonik** предоставляет нормализованную схему из **8 сущностей**, покрывающую полный цикл:
-`Клиент → Товар → Корзина → Заказ → Оплата`
+`Клиент → Товар → Корзина → Заказ → Оплата → Доставка`
 
 ---
 
 ## 🚀 Быстрый старт
 
-### Предварительные требования
-
-- Docker и Docker Compose
-- PostgreSQL 15+ (опционально, если без Docker)
-- Python 3.10+ (для CLI-приложения)
-
-### Установка за 30 секунд
+### 🐳 Через Docker (рекомендуется)
 
 ```bash
 # 1. Клонируем репозиторий
-git clone https://github.com/твой-username/Zonik-Marketplace-DB.git
-cd Zonik-Marketplace-DB
+git clone https://github.com/твой-username/Zonik-Marketplace.git
+cd Zonik-Marketplace
 
-# 2. Поднимаем базу данных с тестовыми данными
+# 2. Запускаем всё одной командой
 docker-compose up -d
 
-# 3. Проверяем, что всё работает
-docker exec -it zonik_db psql -U postgres -d zonik_marketplace -c "\dt"
+# 3. Ждём 10-15 секунд (инициализация БД)
+
+# 4. Запускаем приложение
+docker-compose run app
 ```
 
-### Запуск CLI-приложения
+Готово! Ты в главном меню Zonik.
+
+### 💻 Локальный запуск (без Docker)
+
+#### Предварительные требования
+- PostgreSQL 15+
+- Python 3.11+
+
+#### Установка
 
 ```bash
-# Устанавливаем зависимости
+# 1. Клонируем репозиторий
+git clone https://github.com/твой-username/Zonik-Marketplace.git
+cd Zonik-Marketplace
+
+# 2. Создаём виртуальное окружение
+python -m venv venv
+
+# 3. Активируем (Windows)
+venv\Scripts\activate
+
+# 4. Устанавливаем зависимости
 pip install -r requirements.txt
 
-# Запускаем консольный интерфейс маркетплейса
-python app/main.py
+# 5. Копируем .env.example → .env и вписываем свои настройки БД
+cp .env.example .env
+
+# 6. Создаём базу данных и выполняем SQL-скрипты в PostgreSQL:
+#    - database/01_schema.sql
+#    - database/02_seed_data.sql
+#    - database/03_functions_triggers.sql
+#    - database/04_views.sql
+
+# 7. Запускаем приложение
+python -m app.main
 ```
 
 ---
@@ -91,11 +114,12 @@ python app/main.py
 |---------|------------|---------------------|
 | `customers` | Профили покупателей | Уникальный телефон, email |
 | `sellers` | Продавцы/магазины | Рейтинг с CHECK-ограничением |
-| `category` | Категории товаров | Иерархическая структура |
+| `category` | Категории товаров | Справочник |
 | `product` | Карточки товаров | Связь с продавцом и категорией |
 | `orders` | Заголовки заказов | Автоматическая дата создания |
 | `orders_item` | Позиции заказа | **Составной первичный ключ** |
 | `payments` | Транзакции оплаты | CHECK на методы и статусы |
+| `delivery` | Доставка заказов | CHECK на статусы доставки |
 
 ### Связи и ограничения
 
@@ -104,7 +128,8 @@ erDiagram
     CUSTOMERS ||--o{ ORDERS : places
     ORDERS ||--|{ ORDERS_ITEM : contains
     ORDERS ||--o| PAYMENTS : has
-    PRODUCT ||--o{ ORDERS_ITEM : "included in"
+    ORDERS ||--o| DELIVERY : has
+    PRODUCT ||--o{ ORDERS_ITEM : included_in
     SELLERS ||--o{ PRODUCT : sells
     CATEGORY ||--o{ PRODUCT : categorizes
 ```
@@ -115,77 +140,60 @@ erDiagram
 
 ### 🧠 Интеллектуальные триггеры
 
-База данных **сама следит** за целостностью данных:
+База данных **сама следит** за целостностью:
 
 ```sql
 -- Автоматическое списание остатков при создании заказа
 CREATE TRIGGER trg_update_stock
 AFTER INSERT ON orders_item
-FOR EACH ROW EXECUTE FUNCTION update_stock();
+FOR EACH ROW EXECUTE FUNCTION update_stock_after_order();
+
+-- Автоматический пересчёт суммы заказа
+CREATE TRIGGER trg_recalc_order_total_insert
+AFTER INSERT ON orders_item
+FOR EACH ROW EXECUTE FUNCTION recalc_order_total();
 ```
 
-### 📦 Хранимые процедуры
+### 👥 Две роли пользователей
 
-Сложная бизнес-логика инкапсулирована в процедуры:
+| Роль | Возможности |
+|------|-------------|
+| **Покупатель** | Просмотр каталога, оформление заказа с корзиной, история своих заказов |
+| **Продавец** | Добавление товаров, управление остатками, просмотр заказов со своими товарами |
 
-```sql
--- Создание заказа одним вызовом
-CALL make_order(
-    p_customer_id := 1,
-    p_product_id  := 5,
-    p_quantity    := 2
-);
-```
+### 🛒 Умная корзина
 
-### 🔒 Ограничения целостности
+- Добавление нескольких товаров
+- Автоматическое объединение одинаковых позиций
+- Проверка наличия перед оформлением
+- Выбор способа оплаты и адреса доставки
 
-| Тип ограничения | Пример |
-|----------------|--------|
-| `CHECK` | `Stock_Quantity >= 0` |
-| `CHECK` | `Rating BETWEEN 0 AND 5` |
-| `CHECK` | `Payment_Method IN ('При получении', 'Картой онлайн', 'СБП')` |
-| `FOREIGN KEY` | `ON DELETE CASCADE` для заказов |
-| `UNIQUE` | Телефон клиента, Email |
+### 📊 Готовые представления (VIEW)
+
+| VIEW | Назначение |
+|------|------------|
+| `v_product_full` | Товары с продавцами и статусом наличия |
+| `v_orders_full` | Заказы с полной информацией |
+| `v_seller_stats` | Статистика по продавцам |
+| `v_low_stock_products` | Товары с низким остатком |
+| `v_daily_revenue` | Выручка по дням |
 
 ---
 
 ## 📈 Аналитика
 
-Проект включает готовые аналитические запросы для дашбордов:
+Проект включает готовые аналитические запросы:
 
 ### 1. Витрина товаров (для клиента)
 
 ```sql
-SELECT 
-    p.Product_Name,
-    s.Store_Name,
-    s.Rating,
-    p.Price,
-    CASE 
-        WHEN p.Stock_Quantity = 0 THEN '🔴 Нет в наличии'
-        WHEN p.Stock_Quantity < 5 THEN '🟡 Заканчивается'
-        ELSE '🟢 В наличии'
-    END AS Availability
-FROM product p
-JOIN sellers s ON p.Sellers_ID = s.Sellers_ID
-WHERE s.Rating >= 4.0
-ORDER BY s.Rating DESC, p.Price ASC;
+SELECT * FROM v_product_full WHERE availability = 'В наличии';
 ```
 
 ### 2. Рейтинг продавцов по выручке
 
 ```sql
-SELECT 
-    s.Store_Name,
-    COUNT(DISTINCT o.Order_ID) AS Total_Orders,
-    COALESCE(SUM(o.Total_Amount), 0) AS Revenue,
-    RANK() OVER (ORDER BY SUM(o.Total_Amount) DESC) AS Place
-FROM sellers s
-LEFT JOIN product p ON s.Sellers_ID = p.Sellers_ID
-LEFT JOIN orders_item oi ON p.Product_ID = oi.Product_ID
-LEFT JOIN orders o ON oi.Order_ID = o.Order_ID
-GROUP BY s.Sellers_ID, s.Store_Name
-ORDER BY Revenue DESC;
+SELECT * FROM v_seller_stats ORDER BY total_revenue DESC;
 ```
 
 ### 3. ABC-анализ товаров
@@ -193,17 +201,15 @@ ORDER BY Revenue DESC;
 ```sql
 WITH product_sales AS (
     SELECT 
-        p.Product_ID,
         p.Product_Name,
         COALESCE(SUM(oi.Quantity * oi.Price_At_Time), 0) AS Revenue
-    FROM product p
-    LEFT JOIN orders_item oi ON p.Product_ID = oi.Product_ID
+    FROM Product p
+    LEFT JOIN Orders_Item oi ON p.Product_ID = oi.Product_ID
     GROUP BY p.Product_ID, p.Product_Name
 ),
 ranked AS (
     SELECT *,
-        SUM(Revenue) OVER (ORDER BY Revenue DESC) * 100.0 / 
-        SUM(Revenue) OVER () AS Cumulative_Percent
+        SUM(Revenue) OVER (ORDER BY Revenue DESC) * 100.0 / SUM(Revenue) OVER () AS Cumulative_Percent
     FROM product_sales
     WHERE Revenue > 0
 )
@@ -211,40 +217,27 @@ SELECT
     Product_Name,
     Revenue,
     CASE 
-        WHEN Cumulative_Percent <= 80 THEN 'A (Топ-продажи)'
-        WHEN Cumulative_Percent <= 95 THEN 'B (Средние продажи)'
-        ELSE 'C (Низкие продажи)'
+        WHEN Cumulative_Percent <= 80 THEN 'A (Топ)'
+        WHEN Cumulative_Percent <= 95 THEN 'B (Средние)'
+        ELSE 'C (Низкие)'
     END AS ABC_Category
 FROM ranked;
 ```
+
+Больше запросов в файле `database/05_analytics_queries.sql`.
 
 ---
 
 ## 🛠 Технологии
 
-<div align="center">
-
 | Категория | Технология | Обоснование |
 |-----------|-----------|-------------|
 | **СУБД** | PostgreSQL 15+ | ACID, JSONB, оконные функции |
-| **Язык** | PL/pgSQL | Хранимые процедуры и триггеры |
-| **Бэкенд** | Python 3.10+ | CLI-интерфейс, psycopg2 |
+| **Язык БД** | PL/pgSQL | Хранимые процедуры и триггеры |
+| **Бэкенд** | Python 3.11+ | CLI-интерфейс, psycopg2 |
 | **Контейнеризация** | Docker + Compose | Изолированное окружение |
 | **Визуализация** | Mermaid, dbdiagram.io | ER-диаграммы в коде |
 | **Контроль версий** | Git + GitHub | Семантическое версионирование |
-
-</div>
-
----
-
-## 🧪 Тестирование
-
-Запуск тестовых сценариев:
-
-```bash
-# Проверка триггеров (создание заказа должно уменьшить остаток)
-docker exec -i zonik_db psql -U postgres -d zonik_marketplace < tests/test_queries.sql
-```
 
 ---
 
@@ -252,15 +245,51 @@ docker exec -i zonik_db psql -U postgres -d zonik_marketplace < tests/test_queri
 
 ```
 .
-├── database/           # Все SQL-скрипты
-│   ├── 01_schema.sql   # DDL (CREATE TABLE)
-│   ├── 02_seed_data.sql # Тестовые данные
+├── Dockerfile              # Сборка Python-приложения
+├── docker-compose.yml      # Оркестрация контейнеров
+├── .dockerignore           # Исключения для Docker
+├── .env.example            # Шаблон переменных окружения
+├── .gitignore              # Исключения для Git
+├── requirements.txt        # Python-зависимости
+├── README.md               # Документация
+│
+├── database/               # SQL-скрипты
+│   ├── 01_schema.sql       # DDL (CREATE TABLE)
+│   ├── 02_seed_data.sql    # Тестовые данные
 │   ├── 03_functions_triggers.sql # Процедуры и триггеры
-│   ├── 04_views.sql    # Представления
+│   ├── 04_views.sql        # Представления
 │   └── 05_analytics_queries.sql # Аналитика
-├── app/                # Python CLI
-├── docs/               # Диаграммы и документация
-└── tests/              # SQL-тесты
+│
+├── app/                    # Python-приложение
+│   ├── main.py             # Основной код
+│   ├── db_config.py        # Конфигурация БД
+│   └── setup.py            # Утилита создания БД
+│
+└── docs/                   # Документация
+    ├── logical_model.png   # Логическая схема
+    └── er_diagram.png      # ER-диаграмма
+```
+
+---
+
+## 🧪 Тестирование
+
+### Проверка триггеров
+
+```bash
+# Подключаемся к БД
+docker exec -it zonik_db psql -U postgres -d zonik
+
+# Смотрим триггеры
+SELECT trigger_name, event_object_table FROM information_schema.triggers;
+```
+
+### Проверка VIEW
+
+```sql
+SELECT * FROM v_seller_stats;
+SELECT * FROM v_low_stock_products;
+SELECT * FROM v_daily_revenue;
 ```
 
 ---
@@ -270,11 +299,24 @@ docker exec -i zonik_db psql -U postgres -d zonik_marketplace < tests/test_queri
 Проект разработан в рамках курса **«Проектирование баз данных»** и демонстрирует:
 
 - ✅ Нормализацию до 3НФ
-- ✅ Работу с ограничениями целостности
+- ✅ Работу с ограничениями целостности (CHECK, FOREIGN KEY, UNIQUE)
 - ✅ Использование транзакций и ACID-свойств
 - ✅ Оптимизацию запросов с индексами
 - ✅ Создание хранимых процедур и триггеров
 - ✅ Проектирование архитектуры многопользовательской системы
+- ✅ Контейнеризацию приложения (Docker)
+
+---
+
+## 🚧 Возможные улучшения
+
+- [ ] Веб-интерфейс на Streamlit
+- [ ] REST API на FastAPI
+- [ ] Телеграм-бот для заказов
+- [ ] Unit-тесты на pytest
+- [ ] CI/CD через GitHub Actions
+- [ ] Система отзывов и рейтингов
+- [ ] Полноценная авторизация с JWT
 
 ---
 
