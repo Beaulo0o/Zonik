@@ -70,7 +70,7 @@ docker-compose run app
 
 ```bash
 # 1. Клонируем репозиторий
-git clone https://github.com/твой-username/Zonik-Marketplace.git
+git clone https://github.com/Beaulo0o/Zonik
 cd Zonik-Marketplace
 
 # 2. Создаём виртуальное окружение
