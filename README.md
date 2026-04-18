@@ -63,8 +63,8 @@ docker-compose run app
 ### 💻 Локальный запуск (без Docker)
 
 #### Предварительные требования
-- PostgreSQL 15+
-- Python 3.11+
+- PostgreSQL 18
+- Python 3.14
 
 #### Установка
 
