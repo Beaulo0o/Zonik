@@ -120,18 +120,6 @@ python -m app.main
 | `payments` | Транзакции оплаты | CHECK на методы и статусы |
 | `delivery` | Доставка заказов | CHECK на статусы доставки |
 
-### Связи и ограничения
-
-```mermaid
-erDiagram
-    CUSTOMERS ||--o{ ORDERS : places
-    ORDERS ||--|{ ORDERS_ITEM : contains
-    ORDERS ||--o| PAYMENTS : has
-    ORDERS ||--o| DELIVERY : has
-    PRODUCT ||--o{ ORDERS_ITEM : included_in
-    SELLERS ||--o{ PRODUCT : sells
-    CATEGORY ||--o{ PRODUCT : categorizes
-```
 
 ---
 
@@ -235,7 +223,6 @@ FROM ranked;
 | **Язык БД** | PL/pgSQL | Хранимые процедуры и триггеры |
 | **Бэкенд** | Python 3.12| CLI-интерфейс, psycopg2 |
 | **Контейнеризация** | Docker + Compose | Изолированное окружение |
-| **Визуализация** | Mermaid, dbdiagram.io | ER-диаграммы в коде |
 | **Контроль версий** | Git + GitHub | Семантическое версионирование |
 
 ---
