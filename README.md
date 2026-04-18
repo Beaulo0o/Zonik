@@ -306,37 +306,7 @@ SELECT * FROM v_daily_revenue;
 - ✅ Проектирование архитектуры многопользовательской системы
 - ✅ Контейнеризацию приложения (Docker)
 
----
 
-## 🚧 Возможные улучшения
-
-- [ ] Веб-интерфейс на Streamlit
-- [ ] REST API на FastAPI
-- [ ] Телеграм-бот для заказов
-- [ ] Unit-тесты на pytest
-- [ ] CI/CD через GitHub Actions
-- [ ] Система отзывов и рейтингов
-- [ ] Полноценная авторизация с JWT
-
----
-
-## 🤝 Вклад в проект
-
-Хотите улучшить Zonik?
-
-1. Форкните репозиторий
-2. Создайте ветку: `git checkout -b feature/amazing-feature`
-3. Закоммитьте изменения: `git commit -m 'Add amazing feature'`
-4. Запушьте: `git push origin feature/amazing-feature`
-5. Откройте Pull Request
-
----
-
-## 📄 Лицензия
-
-Распространяется под лицензией MIT. См. файл [LICENSE](LICENSE).
-
----
 
 ## 📞 Контакты
 
