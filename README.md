@@ -101,11 +101,11 @@ python -m app.main
 
 ### Логическая схема
 
-![Логическая модель](docs/logical_model.png)
+![Логическая модель](docs/Logic.png)
 
 ### Физическая ER-диаграмма
 
-![ER-диаграмма](docs/er_diagram.png)
+![ER-диаграмма](docs/ER.png)
 
 ### Описание сущностей
 
