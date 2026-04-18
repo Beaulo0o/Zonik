@@ -3,8 +3,15 @@
 import psycopg2
 from tabulate import tabulate
 from colorama import init, Fore, Style
-from db_config import DB_CONFIG
+import sys
+import os
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from app.db_config import DB_CONFIG
+except ImportError:
+    from db_config import DB_CONFIG
 init(autoreset=True)
 
 # Глобальные переменные сессии
