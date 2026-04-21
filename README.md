@@ -64,7 +64,7 @@ docker-compose run app
 
 #### Предварительные требования
 - PostgreSQL 18
-- Python 3.14
+- Python 3.12
 
 #### Установка
 
