@@ -1,6 +1,5 @@
 -- =============================================
 -- ZONIK MARKETPLACE - FUNCTIONS & TRIGGERS
--- Версия: 1.0.0
 -- =============================================
 
 -- =============================================
@@ -86,7 +85,6 @@ BEGIN
         v_order_id := NEW.Order_ID;
     END IF;
 
-    -- Пересчитываем сумму
     SELECT COALESCE(SUM(Quantity * Price_At_Time), 0)
     INTO new_total
     FROM Orders_Item
@@ -212,8 +210,3 @@ BEGIN
     WHERE p.Sellers_ID = p_seller_id;
 END;
 $$ LANGUAGE plpgsql;
-
--- =============================================
--- ПРОВЕРКА РАБОТЫ
--- =============================================
--- SELECT * FROM information_schema.triggers WHERE trigger_schema = 'public';
