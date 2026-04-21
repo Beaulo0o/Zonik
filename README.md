@@ -293,17 +293,6 @@ SELECT * FROM v_daily_revenue;
 - ✅ Контейнеризацию приложения (Docker)
 
 
-
-##  Контакты
-
-**Автор:** [Твоё Имя]
-
-[![GitHub](https://img.shields.io/badge/GitHub-твой--username-181717?style=flat&logo=github)](https://github.com/твой-username)
-[![Telegram](https://img.shields.io/badge/Telegram-@твой--telegram-26A5E4?style=flat&logo=telegram)](https://t.me/твой-telegram)
-[![Email](https://img.shields.io/badge/Email-твой--email%40gmail.com-EA4335?style=flat&logo=gmail)](mailto:твой-email@gmail.com)
-
----
-
 <div align="center">
 
 ### ⭐ Если проект оказался полезным, поставьте звезду!
